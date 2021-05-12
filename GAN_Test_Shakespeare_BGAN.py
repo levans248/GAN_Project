@@ -55,8 +55,6 @@ test_data, act_test_labels = train_loader.time_series_to_section(test_data,
                                                                  sliding_window_size=200,
                                                                  step_size_of_sliding_window=10)
 
-print(act_train_labels)
-exit(0)
 
 print("---Data is successfully loaded")
 handler = DataHandler(train_data, test_data)

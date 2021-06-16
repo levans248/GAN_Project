@@ -5,6 +5,7 @@ from utils import get_batch, sample_image
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from keras.utils import to_categorical
+import time
 
 
 class Trainer():
@@ -28,6 +29,7 @@ class Trainer():
         valid = np.ones((batch_size, 1))
         fake = np.zeros((batch_size, 1))
 
+        start_time = time.time()
         for epoch in range(epochs):
 
              # Select a random half batch of images
@@ -54,23 +56,33 @@ class Trainer():
 
             g_loss = self.model.combined.train_on_batch(gen_input, [valid, sampled_labels])
 
+            # perplexity = e^loss
+            train_perplexity = np.exp(g_loss[0])
+
             # Plot the progress
             print ("%d [D loss: %.2f, acc.: %.2f%%] [Q loss: %.2f] [G loss: %.2f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss[1], g_loss[2]))
 
             if epoch % sample_interval == 0:
-                print("""%d [DiscLoss/Acc Real: (%10f, %10f)] 
-                       [DiscLoss/Acc Fake: (%10f, %10f)] 
-                       [DiscAcc %10f][GenLoss = %10f]"""
+                sample_time = time.time() - start_time
+                print("""%d [DiscLoss/Acc Real: (%10f, %10f)]
+                       [Disc recall/precision/fmeasure Real: (%10f, %10f, %10f)]
+                       [DiscLoss/Acc Fake: (%10f, %10f)]
+                       [Disc recall/precision/fmeasure Fake: (%10f, %10f, %10f)]  
+                       [DiscAcc %10f][GenLoss = %10f, GenPerplexity = %10f]
+                       [Time taken during sample interval (seconds): %10f]"""
                       % (epoch, d_loss_real[0], d_loss_real[1],
+                         d_loss_real[2], d_loss_real[3], d_loss_real[4],
                          d_loss_fake[0], d_loss_fake[1],
+                         d_loss_fake[2], d_loss_fake[3], d_loss_fake[4],
                          0.5 * (d_loss_real[1] + d_loss_fake[1]),
-                         g_loss[0]))
+                         g_loss[0], train_perplexity, sample_time))
 
                 self.disc_loss_r.append(d_loss_real)
                 self.disc_loss_f.append(d_loss_fake)
 
                 self.gen_loss.append(g_loss[0])
                 sample_image(self.model, epoch, gen_imgs, self.path)
+                start_time = time.time()
             if (epoch % 1000 == 0):
                 self.save_models(self.path, epoch, self.model.generator, self.model.discriminator)
 
